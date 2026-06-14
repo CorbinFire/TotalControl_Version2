@@ -124,6 +124,7 @@ class mediumtank(BaseVariablesClass):
     def __init__(self, myID, mybranch, mysubgroup, myfamily, myisSolid, mysize, myposition, myimage):
         super().__init__(myID, mybranch, mysubgroup, myfamily, myisSolid, mysize, myposition, myimage)
         self.myangle = 0
+        self.myturnspeed = 3
         # self.mygoal = {"where":myposition,"what":self.movethere([0,0],0)}
 
     def getimage(self):
@@ -134,23 +135,26 @@ class mediumtank(BaseVariablesClass):
         return self.myangle
     
     def turn(self,angle):
-        self.myangle += angle
+        if self.myangle - angle < angle - self.myangle:
+            self.myangle += self.myturnspeed
+        if self.myangle - angle > angle - self.myangle:
+            self.myangle -= self.myturnspeed
         self.myangle %= 360
         self.myrect = pygame.transform.rotate(super().getimage(),self.getangle()).get_rect(center = self.getposition())
 
     def printangle(self):
         print(self.getangle())
 
-    # def calculateratiox_y(self,x,y):
-    #     x,y = x-self.getposition()[0],y-self.getposition()[1]
-    #     if x == 0:
-    #         print( [0,(1 if y>0 else -1)] )
-    #     elif y == 0:
-    #         print( [(1 if x>0 else -1),0] )
-    #     else:
-    #         px = (1 if x>0 else -1)/math.sqrt(y/x*y/x+1)
-    #         py = (1 if x>0 else -1)*(y/x)/math.sqrt(y/x*y/x+1)
-    #         print( [px,py] )
+    def calculateratiox_y(self,x,y):
+        x,y = x-self.getposition()[0],y-self.getposition()[1]
+        if x == 0:
+            print( [0,(1 if y>0 else -1)] )
+        elif y == 0:
+            print( [(1 if x>0 else -1),0] )
+        else:
+            px = (1 if x>0 else -1)/math.sqrt(y/x*y/x+1)
+            py = (1 if x>0 else -1)*(y/x)/math.sqrt(y/x*y/x+1)
+            print( [px,py] )
     
     def calculateangle(self,x,y):
         x,y = x-self.getposition()[0],y-self.getposition()[1]
@@ -207,7 +211,8 @@ while running:
     wn.blit(p1.getimage(),p1.getrect())
     p1.move(x,y)
     wn.blit(t1.getimage(),t1.getrect())
-    t1.turn(5)
+    t1.turn(45)
+    t1.move(3)
     t1.calculateangle(599,599)
     pygame.display.flip()
     clock.tick(FPS)
