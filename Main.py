@@ -124,7 +124,9 @@ class mediumtank(BaseVariablesClass):
     def __init__(self, myID, mybranch, mysubgroup, myfamily, myisSolid, mysize, myposition, myimage):
         super().__init__(myID, mybranch, mysubgroup, myfamily, myisSolid, mysize, myposition, myimage)
         self.myangle = 0
-        self.myturnspeed = 3
+        self.myturnspeed = 6
+        self.mymovespeed = 4
+        self.shouldmove = True
         # self.mygoal = {"where":myposition,"what":self.movethere([0,0],0)}
 
     def getimage(self):
@@ -135,9 +137,12 @@ class mediumtank(BaseVariablesClass):
         return self.myangle
     
     def turn(self,angle):
-        if self.myangle - angle < angle - self.myangle:
+        if angle == -1:
+            self.shouldmove = False
+            return
+        if (self.getangle() - angle)%360 > (angle - self.getangle())%360:
             self.myangle += self.myturnspeed
-        if self.myangle - angle > angle - self.myangle:
+        if (self.getangle() - angle)%360 < (angle - self.getangle())%360:
             self.myangle -= self.myturnspeed
         self.myangle %= 360
         self.myrect = pygame.transform.rotate(super().getimage(),self.getangle()).get_rect(center = self.getposition())
@@ -157,17 +162,27 @@ class mediumtank(BaseVariablesClass):
             print( [px,py] )
     
     def calculateangle(self,x,y):
+        xyrectcollisioncheck = pygame.Rect(x,y,1,1)
         x,y = x-self.getposition()[0],y-self.getposition()[1]
-        if x == 0:
-            print( [0,(1 if y>0 else -1)] )
-        elif y == 0:
-            angle = 90 if x>0 else -1
-        else:
-            angle = math.degrees(math.atan(y/x))
-        print( angle )
 
-    def move(self,speed):
-        self.setposition([self.getposition()[0]+speed*math.cos(math.radians(self.getangle()-90)),self.getposition()[1]-speed*math.sin(math.radians(self.getangle()-90))])
+        if xyrectcollisioncheck.collideobjects([pygame.Rect(self.getrect().topleft[0]+self.getimage().get_width()*1/4,self.getrect().topleft[1]+self.getimage().get_height()*1/4,self.getimage().get_width()*1/2,self.getimage().get_height()*1/2)])!=None:
+            return -1
+        if x == 0:
+            angle = 180 if y>0 else 0
+        elif y == 0:
+            angle = 90 if x>0 else 270
+        else:
+            angle = 90 + abs(math.degrees(math.atan(y/x))) if x>0 and y<0 else 270 - abs(math.degrees(math.atan(y/x))) if x<0 and y<0 else 270 + abs(math.degrees(math.atan(y/x))) if x<0 and y>0 else 90 - abs(math.degrees(math.atan(y/x)))
+        return angle
+
+    def moveforward(self):
+        if not self.shouldmove:
+            self.shouldmove = True
+            return 0
+        self.setposition([self.getposition()[0]+self.mymovespeed*math.cos(math.radians(self.getangle()-90)),self.getposition()[1]-self.mymovespeed*math.sin(math.radians(self.getangle()-90))])
+
+    def moveto():
+        pass
 
     # def shootheavy(self):
 
@@ -179,13 +194,18 @@ class mediumtank(BaseVariablesClass):
 
 
 
-
+font = pygame.font.Font(None,150)
 clock = pygame.time.Clock()
 FPS = 30
 
-# HomeScreen = True
-# while HomeScreen:
-#     clock.tick(FPS)
+HomeScreen = True
+while HomeScreen:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+            pygame.quit()
+        
+    clock.tick(FPS)
 
 
 b1 = background("Machinegunner",None,None,None,True,[75,75],[300,300],"total con pistol soldier2.png")
@@ -193,9 +213,8 @@ p1 = machinegunner("Machinegunner",None,None,None,True,[width/60,width/60],[300,
 t1 = mediumtank("Machinegunner",None,None,None,True,[width/30,width/22],[600,600],"total con tank.png")
 
 running = True
-
-
 startTime = time.time()
+
 
 while running:
     x,y=0,0
@@ -206,23 +225,16 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
-            pygame.quit()
-    if time.time()-startTime > 4:
-        startTime = time.time()
+            # pygame.quit()
 
-
-    wn.fill((255,255,255))
-    # wn.blit()
-    wn.blit(p1.getimage(),p1.getrect())
+    
     p1.move(x,y)
+    t1.turn(t1.calculateangle(*pygame.mouse.get_pos()))
+    t1.moveforward()
+    wn.fill((255,255,255))
+    wn.blit(p1.getimage(),p1.getrect())
     wn.blit(t1.getimage(),t1.getrect())
-<<<<<<< HEAD
-    t1.turn(45)
-    t1.move(3)
-    t1.calculateangle(599,599)
-=======
-    t1.turn(5)
-    t1.calculateangle(599,601)
->>>>>>> 2f35c81 (1)
+    timefromstart = font.render(f"{round(time.time()-startTime,1)}",True,(255,0,0))
+    wn.blit(timefromstart,(width/2-timefromstart.get_rect()[0]/2,0))
     pygame.display.flip()
     clock.tick(FPS)
